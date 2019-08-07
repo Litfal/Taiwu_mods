@@ -1,0 +1,9 @@
+﻿{
+    "Id": "FastLoad",
+    "DisplayName": "加快讀取速度",
+    "Author": "litfal",
+    "Version": "1.0.0.0",
+    "AssemblyName": "FastLoad.dll",
+    "EntryMethod": "FastLoad.Main.Load",
+    "HomePage": "https://github.com/Litfal/Taiwu_mods/tree/FastLoad/FastLoad"
+}
