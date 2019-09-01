@@ -26,6 +26,7 @@ namespace SamsaraLock
         public bool lockFaceFuta = true;
 
         public uint taiwuPreemptRate = 100;
+        public bool blockTaiwuSamsara = false;
 
         public override void Save(UnityModManager.ModEntry modEntry)
         {
@@ -73,6 +74,7 @@ namespace SamsaraLock
             settings.lockGenderAlter = GUILayout.Toggle(settings.lockGenderAlter, "转世异性。开启了转世性别锁定的人物会转世为异性。");
             settings.lockFaceTaiwu = GUILayout.Toggle(settings.lockFaceTaiwu, "固定太吾相貌，前世为太吾的人物转世后相貌和前世相同(魅力根据相貌随机)。[需开启太吾/全人物转世性别锁定]");
             settings.lockFaceAll = GUILayout.Toggle(settings.lockFaceAll, "固定全人物相貌，所有人物转世后相貌和前世相同(魅力根据相貌随机)。[需开启全人物转世性别锁定]");
+            settings.blockTaiwuSamsara = GUILayout.Toggle(settings.blockTaiwuSamsara, "暫時不讓太吾轉世，用以控制讓太吾轉世成自己的小孩 (其他功能會失效!)");
 
             GUILayout.BeginHorizontal();
 
@@ -88,7 +90,6 @@ namespace SamsaraLock
             GUILayout.Label("%的机会抢占转生机会。设置为0时死去的太吾投胎机会和正常人相同。", GUILayout.ExpandWidth(false));
             GUILayout.EndHorizontal();
             GUILayout.BeginVertical();
-
             //加入手动寻找太吾按钮
             bool flag = DateFile.instance == null || DateFile.instance.actorsDate == null || !DateFile.instance.actorsDate.ContainsKey(DateFile.instance.mianActorId);
             if (flag)
@@ -305,9 +306,23 @@ namespace SamsaraLock
     [HarmonyPatch(typeof(DateFile), "SetActorSamsara")]
     public static class DateFile_SetActorSamsara_Patch
     {
+        static List<CharId> _tmpRemoveId = new List<CharId>();
         private static bool Prefix( ref int actorId,ref int toPartId)
         {
             if (!Main.enabled) return true;
+            // 暫時不讓太吾投胎轉世, 方法是從死人清單內暫時移除太吾
+            // 於 Postfix 再加回去
+            _tmpRemoveId.Clear();
+            if (Main.settings.blockTaiwuSamsara &&
+                DeadTaiwuManager.instance?.deadTaiwuList?.Count > 0)
+            {
+                foreach (var preTaiwuId in DeadTaiwuManager.instance.deadTaiwuList)
+                {
+                    if (DateFile.instance.deadActors.Remove(preTaiwuId))
+                        _tmpRemoveId.Add(preTaiwuId);
+                }
+                return true;
+            }
             bool istaiwu = false;
             int preactor = 0;
             //判断是否太吾转生
@@ -396,6 +411,12 @@ namespace SamsaraLock
             return false;
         }
 
+        private static void Postfix()
+        {
+            // 把暫時移除的死亡太吾加回去
+            DateFile.instance.deadActors.AddRange(_tmpRemoveId);
+            _tmpRemoveId.Clear();
+        }
     }
 
 }
