@@ -236,48 +236,46 @@ namespace SamsaraLock
     }
 
     /// <summary>
+    /// Loading class 已被移除
+    /// 故改用 DateFile.NewDate 作為開新遊戲或讀取的鉤子
     ///  开新游戏，读取进度时，重置死太吾管理器
     /// </summary>
-    [HarmonyPatch(typeof(Loading), "LoadingScene")]
-    public static class Loading_LoadingScene_Patch
+    [HarmonyPatch(typeof(DateFile), "NewDate")]
+    public static class DateFile_NewDate_Patch
     {
 
-        private static void Prefix(bool newGame, int teachingId, int loadingDateId)
+        private static void Prefix()
         {
             if (!Main.enabled) { return; }
-
-            if (newGame || loadingDateId != 0)
-            {
-                DeadTaiwuManager.reset();
-            }
+            DeadTaiwuManager.reset();
         }
     }
 
     /// <summary>
+    /// Loading class 已被移除
+    /// 故改用 DefaultData.Replace 作為讀取存檔完畢的鉤子
     ///  Loading完成，数据准备完毕后初始化死太吾管理器。
     ///  DeadTaiwuManager.initialize() 内部会处理重复initialize的情况。
     /// </summary>
-    [HarmonyPatch(typeof(Loading), "Update")]
-    public static class Loading_Update_Patch
+    [HarmonyPatch(typeof(ArchiveSystem.GameData.DefaultData), "Replace")]
+    public static class DefaultData_Replace_Patch
     {
-        private static void Prefix(bool ___loadingEnd)
+        private static void Postfix()
         {
             if (!Main.enabled) { return; }
 
-            if (___loadingEnd)
+            try
             {
-                try
-                {
-                    // 初始化死太吾cache
-                    DeadTaiwuManager.initialize();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
-                }
+                // 初始化死太吾cache
+                DeadTaiwuManager.initialize();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
             }
         }
     }
+
 
     //在传剑时把太污送入名单，因为之前已经remove过了，标记应该不会失效（虽然不标记好像也OK
 
