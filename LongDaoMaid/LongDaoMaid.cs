@@ -290,14 +290,14 @@ namespace LongDaoMaid
         }
 
         /// <summary>
-        /// 攔截龍島事件, 並以flag供其他功能判斷是否正在龍島事件內
+        /// 攔截恩義事件中的龍島事件, 並以flag供其他功能判斷是否正在龍島事件內
         /// </summary>
         [HarmonyPatch(typeof(MessageEventManager), "EndEvent9010_1")]
         public class MessageEventManager_EndEvent9010_1_Patch
         {
-            private static void Prefix()
+            private static void Prefix(MessageEventManager __instance)
             {
-                isInLongDaoEvent = true;
+                isInLongDaoEvent = __instance.EventValue[1] == 11;
             }
 
             private static void Postfix()
@@ -331,11 +331,9 @@ namespace LongDaoMaid
         /// <param name="id"></param>
         public static void npcChange(int id)
         {
-            Dictionary<int, string> npc;
             DateFile df = DateFile.instance;
-            npc = df.actorsDate[id];
-            Dictionary<int, string> player;
-            player = df.actorsDate[df.mianActorId];
+            Dictionary<int, string> npc = df.actorsDate[id];
+            Dictionary<int, string> player = df.actorsDate[df.mianActorId];
 
             if (!npc.ContainsKey(14))
             {
@@ -387,7 +385,7 @@ namespace LongDaoMaid
             //3.改变取向
             if (settings.sexOrientation == true)
             {
-                if (df.GetActorDate(id, 14, false) == npc[14])
+                if (player[14] == npc[14])
                     npc[21] = "1";
                 else npc[21] = "0";
             }
