@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 using Harmony12;
 using UnityModManagerNet;
 using System.Reflection;
+using GameData;
 using Random = UnityEngine.Random;
 //using System.IO;
 
@@ -201,8 +202,9 @@ namespace LongDaoMaid
                 {
                     if (!IsNumber(e.Value[29]))
                     {
-                        Logger.Log($"{DateFile.instance.actorsDate[e.Key][5]}{DateFile.instance.actorsDate[e.Key][0]}已重置真实姓氏");
-                        DateFile.instance.actorsDate[e.Key][29] = "5";
+                        
+                        Logger.Log($"{GameData.Characters.GetCharProperty(e.Key, 5)}{GameData.Characters.GetCharProperty(e.Key, 0)}已重置真实姓氏");
+                        GameData.Characters.SetCharProperty(e.Key, 29, "5");
                     }
                 }
             }
@@ -244,7 +246,7 @@ namespace LongDaoMaid
                     return;
                 }
                 lastNPCid = __result;
-                DateFile.instance.actorsFeatureCache.Remove(__result); //刷新特性
+                __instance.ActorFeaturesCacheReset(__result); //刷新特性
                 return;
             }
         }
@@ -332,19 +334,19 @@ namespace LongDaoMaid
         public static void npcChange(int id)
         {
             DateFile df = DateFile.instance;
-            Dictionary<int, string> npc = df.actorsDate[id];
-            Dictionary<int, string> player = df.actorsDate[df.mianActorId];
+            var playerId = df.mianActorId;
 
             if (!npc.ContainsKey(14))
             {
                 npc.Add(14, df.GetActorDate(id, 14, false));
+                
             }
 
-            npc[17] = (settings.nvZhuang == 1 || settings.nvZhuang == 2) ? "1" : "0"; // 女生男相 或 男生女相
+            GameData.Characters.SetCharProperty(id, 17,  (settings.nvZhuang == 1 || settings.nvZhuang == 2) ? "1" : "0"); // 女生男相 或 男生女相
             string genderStr = settings.nvZhuang <= 1 ? "2" : "1";
-            if (npc[14] != genderStr)
+            if (GameData.Characters.GetCharProperty(id, 14) != genderStr)
             {
-                npc[14] = genderStr;
+                GameData.Characters.SetCharProperty(id, 14,  genderStr);
                 // 換性別 重新取名字
                 df.MakeActorName(id, int.Parse(df.GetActorDate(id, 29, false)), "", true);
             }
@@ -366,11 +368,11 @@ namespace LongDaoMaid
 
             //1.调整立场
             if (settings.stanceChange == true)
-                npc[16] = Convert.ToString(settings.liChang * 250); //修改立场
+                GameData.Characters.SetCharProperty(id, 16,  Convert.ToString(settings.liChang * 250)); //修改立场
 
             //2.每个龙岛女仆都被龙神赋予更多的阳寿。因为自动调整过年龄，所以增加10年补贴可能的亏损。
-            int countTemp13 = Convert.ToInt32(npc[13]);
-            int countTemp12 = Convert.ToInt32(npc[12]);
+            int countTemp13 = Convert.ToInt32(GameData.Characters.GetCharProperty(id, 13));
+            int countTemp12 = Convert.ToInt32(GameData.Characters.GetCharProperty(id, 12));
             countTemp13 += 10;
             countTemp12 += 10;
 
@@ -379,26 +381,26 @@ namespace LongDaoMaid
                 countTemp13 += 10;
                 countTemp12 += 10;
             }
-            npc[13] = Convert.ToString(countTemp13);
-            npc[12] = Convert.ToString(countTemp12);
+            GameData.Characters.SetCharProperty(id, 13,  Convert.ToString(countTemp13));
+            GameData.Characters.SetCharProperty(id, 12,  Convert.ToString(countTemp12));
 
             //3.改变取向
             if (settings.sexOrientation == true)
             {
-                if (player[14] == npc[14])
-                    npc[21] = "1";
-                else npc[21] = "0";
+                if (GameData.Characters.GetCharProperty(playerId, 14) == GameData.Characters.GetCharProperty(id, 14))
+                    GameData.Characters.SetCharProperty(id, 21,  "1");
+                else GameData.Characters.SetCharProperty(id, 21,  "0");
             }
             //麻蛋！原来只要不是0（异性恋）就是双性恋！我还以为1是同2是双！原来这游戏没有同！！！
 
             //4.年龄区间
             if (settings.maxAge > 0 && settings.minAge > 0)
             {
-                npc[11] = Convert.ToString(Random.Range(settings.minAge, settings.maxAge));
+                GameData.Characters.SetCharProperty(id, 11,  Convert.ToString(Random.Range(settings.minAge, settings.maxAge)));
             }
 
             //5.人口买卖
-            if (settings.buyMaid && Convert.ToInt32(player[406]) >= 9998)
+            if (settings.buyMaid && Convert.ToInt32(GameData.Characters.GetCharProperty(playerId, 406)) >= 9998)
             {
                 df.baseWorldDate[int.Parse(df.gangDate[14][11])][int.Parse(df.gangDate[14][3])][3] += 300;
                 UIDate.instance.ChangeResource(df.mianActorId, 5, -9998, true);
@@ -407,11 +409,11 @@ namespace LongDaoMaid
             //6.再生父母
             if (settings.getNewSurname != "")
             {
-                npc[5] = settings.getNewSurname;
+                GameData.Characters.SetCharProperty(id, 5,  settings.getNewSurname);
             }
 
             if (settings.getNewName != "")
-                npc[0] = settings.getNewName;
+                GameData.Characters.SetCharProperty(id, 0,  settings.getNewName);
 
             //7.正式培训
             if (settings.xingGeChange)
@@ -430,9 +432,9 @@ namespace LongDaoMaid
             string rdBrow = Convert.ToString(Random.Range(30, 44));
             string rdMouse = Convert.ToString(Random.Range(30, 44));
 
-            npc[995] = "0" + "|" + rdNose + "|" + rdSign + "|" + rdEyes + "|" + rdBrow + "|" + rdMouse + "|" + "0" + "|" + rdHair;
+            GameData.Characters.SetCharProperty(id, 995,  "0" + "|" + rdNose + "|" + rdSign + "|" + rdEyes + "|" + rdBrow + "|" + rdMouse + "|" + "0" + "|" + rdHair);
             if (Random.Range(1, 4) != 1)
-                npc[996] =
+                GameData.Characters.SetCharProperty(id, 996, 
                     Convert.ToString(Random.Range(0, 4)) + "|" +
                     Convert.ToString(Random.Range(0, 4)) + "|" +
                     Convert.ToString(Random.Range(0, 4)) + "|" +
@@ -440,25 +442,25 @@ namespace LongDaoMaid
                     Convert.ToString(Random.Range(0, 4)) + "|" +
                     Convert.ToString(Random.Range(0, 4)) + "|" +
                     Convert.ToString(Random.Range(0, 4)) + "|" +
-                    Convert.ToString(Random.Range(0, 4));//75%概率，发肤颜色取前5
+                    Convert.ToString(Random.Range(0, 4)));//75%概率，发肤颜色取前5
 
             //重新roll魅力
-            npc[15] = Convert.ToString(Random.Range(501, 900));
+            GameData.Characters.SetCharProperty(id, 15,  Convert.ToString(Random.Range(501, 900)));
 
             if (Random.Range(1, 10) == 1)//再roll，10%概率发肤色与太吾一致，好歹给黑妹留点机会
-                npc[996] = player[996];
+                GameData.Characters.SetCharProperty(id, 996,  GameData.Characters.GetCharProperty(playerId, 996));
 
             //List<int> love = DateFile.instance.GetActorSocial(id, 312, false, false);
 
             //资质均衡
-            npc[551] = "2";
-            npc[651] = "2";
+            GameData.Characters.SetCharProperty(id, 551,  "2");
+            GameData.Characters.SetCharProperty(id, 651,  "2");
 
             //挑选最出众的资质
             int yiID = 501;
             for (int i = 0; i < 16; i++)
             {
-                if (Int32.Parse(npc[yiID]) < Int32.Parse(npc[501 + i]))
+                if (Int32.Parse(GameData.Characters.GetCharProperty(id, yiID)) < Int32.Parse(GameData.Characters.GetCharProperty(id, 501 + i)))
                 {
                     yiID = 501 + i;
                 }
@@ -466,36 +468,36 @@ namespace LongDaoMaid
             int wuID = 604;
             for (int i = 0; i < 11; i++)
             {
-                if (Int32.Parse(npc[wuID]) < Int32.Parse(npc[604 + i]))
+                if (Int32.Parse(GameData.Characters.GetCharProperty(id, wuID)) < Int32.Parse(GameData.Characters.GetCharProperty(id, 604 + i)))
                 {
                     wuID = 604 + i;
                 }
             }
 
             //略微强化资质
-            if (int.Parse(npc[yiID]) <= 100)
-                npc[yiID] = Convert.ToString(Convert.ToInt32(npc[yiID]) + 20);
-            if (int.Parse(npc[wuID]) <= 100)
-                npc[wuID] = Convert.ToString(Convert.ToInt32(npc[wuID]) + 20);
-            if (int.Parse(npc[601]) <= 100)
-                npc[601] = Convert.ToString(Convert.ToInt32(npc[601]) + 15);
-            if (int.Parse(npc[602]) <= 100)
-                npc[602] = Convert.ToString(Convert.ToInt32(npc[601]) + 15);
-            if (int.Parse(npc[603]) <= 100)
-                npc[603] = Convert.ToString(Convert.ToInt32(npc[601]) + 15);
+            if (int.Parse(GameData.Characters.GetCharProperty(id, yiID)) <= 100)
+                GameData.Characters.SetCharProperty(id, yiID,  Convert.ToString(Convert.ToInt32(GameData.Characters.GetCharProperty(id, yiID)) + 20));
+            if (int.Parse(GameData.Characters.GetCharProperty(id, wuID)) <= 100)
+                GameData.Characters.SetCharProperty(id, wuID,  Convert.ToString(Convert.ToInt32(GameData.Characters.GetCharProperty(id, wuID)) + 20));
+            if (int.Parse(GameData.Characters.GetCharProperty(id, 601)) <= 100)
+                GameData.Characters.SetCharProperty(id, 601,  Convert.ToString(Convert.ToInt32(GameData.Characters.GetCharProperty(id, 601)) + 15));
+            if (int.Parse(GameData.Characters.GetCharProperty(id, 602)) <= 100)
+                GameData.Characters.SetCharProperty(id, 602,  Convert.ToString(Convert.ToInt32(GameData.Characters.GetCharProperty(id, 601)) + 15));
+            if (int.Parse(GameData.Characters.GetCharProperty(id, 603)) <= 100)
+                GameData.Characters.SetCharProperty(id, 603,  Convert.ToString(Convert.ToInt32(GameData.Characters.GetCharProperty(id, 601)) + 15));
 
             for (int x = 1; x <= 6; x++)
             {
                 int rdyiID = Random.Range(501, 516);
-                if (int.Parse(npc[rdyiID]) <= 100)
-                    npc[rdyiID] = Convert.ToString(Convert.ToInt32(npc[rdyiID]) + 20);
+                if (int.Parse(GameData.Characters.GetCharProperty(id, rdyiID)) <= 100)
+                    GameData.Characters.SetCharProperty(id, rdyiID,  Convert.ToString(Convert.ToInt32(GameData.Characters.GetCharProperty(id, rdyiID)) + 20));
             }
 
             //SSR
             if (settings.ssr && Random.Range(1, 100) <= settings.ssrBoom)
             {
-                npc[995] = Convert.ToString(Random.Range(2001, 2009));
-                if (npc[14] == "2") df.AddActorFeature(id, 1002);
+                GameData.Characters.SetCharProperty(id, 995,  Convert.ToString(Random.Range(2001, 2009)));
+                if (GameData.Characters.GetCharProperty(id, 14) == "2") df.AddActorFeature(id, 1002);
                 else df.AddActorFeature(id, 1001);
             }
 
@@ -510,9 +512,10 @@ namespace LongDaoMaid
             {
                 newItem = 73800 + Random.Range(1, 9);
             }
-            npc[305] = df.MakeNewItem(newItem).ToString();
+            GameData.Characters.SetCharProperty(id, 305,  df.MakeNewItem(newItem).ToString());
 
-            df.actorsFeatureCache.Remove(id); //刷新特性
+            df.ActorFeaturesCacheReset(id); //刷新特性
+
         }
 
 
